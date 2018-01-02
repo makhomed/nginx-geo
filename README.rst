@@ -54,8 +54,6 @@ Configure cron job, for example, in file ``/etc/cron.d/nginx-geo``:
 
 .. code-block:: none
 
-    MAILTO=your@email-address
-
     RANDOM_DELAY=360
 
     0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --reload-nginx
