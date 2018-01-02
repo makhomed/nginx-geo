@@ -58,6 +58,14 @@ Configure cron job, for example, in file ``/etc/cron.d/nginx-geo``:
 
     0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --reload-nginx
 
+Or if only IPv4 networks needed:
+
+.. code-block:: none
+
+    RANDOM_DELAY=360
+
+    0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --exclude-ipv6 --reload-nginx
+
 nginx configuration
 -------------------
 
