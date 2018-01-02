@@ -37,8 +37,8 @@ class Convertor(object):
         self.dest = os.path.join(self.args.work_dir, self.args.dest)
         self.zipfile = os.path.join(self.args.work_dir, os.path.basename(self.args.src))
         self.country_codes = dict()
-        self.ipv4_blocks = dict()
-        self.ipv6_blocks = dict()
+        self.ipv4_blocks = list()
+        self.ipv6_blocks = list()
 
     def download(self):
         args = 'curl', '--silent', '--output', self.zipfile, '--time-cond', self.zipfile, '--remote-time', self.args.src
@@ -52,10 +52,9 @@ class Convertor(object):
             geoname_id, dummy_locale_code, dummy_continent_code, dummy_continent_name, country_iso_code, dummy_country_name = row
             if geoname_id == 'geoname_id':
                 continue
-            if country_iso_code == '':
-                continue
-            geoname_id = int(geoname_id)
-            self.country_codes[geoname_id] = country_iso_code
+            if country_iso_code:
+                country_id = int(geoname_id)
+                self.country_codes[country_id] = country_iso_code
 
     def read_ipv4_blocks(self, file_like_object):
         for row in csv.reader(file_like_object):
@@ -71,7 +70,7 @@ class Convertor(object):
             else:
                 country_id = None
             if country_id:
-                self.ipv4_blocks[network] = country_id
+                self.ipv4_blocks.append((network, country_id))
 
     def read_ipv6_blocks(self, file_like_object):
         for row in csv.reader(file_like_object):
@@ -87,7 +86,7 @@ class Convertor(object):
             else:
                 country_id = None
             if country_id:
-                self.ipv6_blocks[network] = country_id
+                self.ipv6_blocks.append((network, country_id))
 
     def write_file(self, filename, content):
         tmp_filename = filename + '.tmp.' + uuid.uuid4().hex + '.tmp'
@@ -116,16 +115,14 @@ class Convertor(object):
                 if entry.filename.endswith("/GeoLite2-Country-Blocks-IPv6.csv") and not self.args.exclude_ipv6:
                     self.read_ipv6_blocks(self.open_zip_entry(database, entry))
         out = list()
-        for network in sorted(self.ipv4_blocks):
-            geoname_id = self.ipv4_blocks[network]
-            country_code = self.country_codes.get(geoname_id)
+        for network, country_id in self.ipv4_blocks:
+            country_code = self.country_codes.get(country_id)
             if country_code:
                 line = "%s %s;" % (network, country_code)
                 out.append(line)
         if not self.args.exclude_ipv6:
-            for network in sorted(self.ipv6_blocks):
-                geoname_id = self.ipv6_blocks[network]
-                country_code = self.country_codes.get(geoname_id)
+            for network, country_id in self.ipv6_blocks:
+                country_code = self.country_codes.get(country_id)
                 if country_code:
                     line = "%s %s;" % (network, country_code)
                     out.append(line)
