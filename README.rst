@@ -6,16 +6,16 @@ Convert GeoLite2 Country database to nginx format.
 Installation
 ------------
 
- - ``cd /opt``
- - ``git clone https://github.com/makhomed/nginx-geo.git nginx-geo``
+- ``cd /opt``
+- ``git clone https://github.com/makhomed/nginx-geo.git nginx-geo``
 
 Also you need to install ``curl`` and ``python``.
 
 Upgrade
 -------
 
- - ``cd /opt/nginx-geo``
- - ``git pull``
+- ``cd /opt/nginx-geo``
+- ``git pull``
 
 Usage
 -----
