@@ -1,0 +1,170 @@
+#!/usr/bin/python
+
+import argparse
+import csv
+import io
+import os
+import os.path
+import signal
+import subprocess
+import sys
+import uuid
+import zipfile
+
+
+class Process(object):
+    def __init__(self, *args):
+        self.args = args
+        process = subprocess.Popen(args, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+        self.stdout, self.stderr = process.communicate()
+        self.returncode = process.returncode
+
+    def failed(self):
+        return self.returncode != 0
+
+    def print_info(self, message):
+        print(message + ": Process(", self.args, ") failed")
+        print("returncode:", self.returncode)
+        print("stdout:", self.stdout)
+        print("stderr:", self.stderr)
+
+
+class Convertor(object):
+    def __init__(self, args):
+        self.args = args
+        if not os.path.isdir(self.args.work_dir):
+            os.mkdir(self.args.work_dir)
+        self.dest = os.path.join(self.args.work_dir, self.args.dest)
+        self.zipfile = os.path.join(self.args.work_dir, os.path.basename(self.args.src))
+        self.country_codes = dict()
+        self.ipv4_blocks = dict()
+        self.ipv6_blocks = dict()
+
+    def download(self):
+        args = 'curl', '--silent', '--output', self.zipfile, '--time-cond', self.zipfile, '--remote-time', self.args.src
+        process = Process(*args)
+        if process.failed():
+            process.print_info("fatal error")
+            sys.exit(1)
+
+    def read_country_codes(self, file_like_object):
+        for row in csv.reader(file_like_object):
+            geoname_id, dummy_locale_code, dummy_continent_code, dummy_continent_name, country_iso_code, dummy_country_name = row
+            if geoname_id == 'geoname_id':
+                continue
+            if country_iso_code == '':
+                continue
+            geoname_id = int(geoname_id)
+            self.country_codes[geoname_id] = country_iso_code
+
+    def read_ipv4_blocks(self, file_like_object):
+        for row in csv.reader(file_like_object):
+            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, dummy_is_anonymous_proxy, dummy_is_satellite_provider = row
+            if geoname_id == 'geoname_id':
+                continue
+            if represented_country_geoname_id:
+                country_id = int(represented_country_geoname_id)
+            elif geoname_id:
+                country_id = int(geoname_id)
+            elif registered_country_geoname_id:
+                country_id = int(registered_country_geoname_id)
+            else:
+                country_id = None
+            if country_id:
+                self.ipv4_blocks[network] = country_id
+
+    def read_ipv6_blocks(self, file_like_object):
+        for row in csv.reader(file_like_object):
+            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, dummy_is_anonymous_proxy, dummy_is_satellite_provider = row
+            if geoname_id == 'geoname_id':
+                continue
+            if represented_country_geoname_id:
+                country_id = int(represented_country_geoname_id)
+            elif geoname_id:
+                country_id = int(geoname_id)
+            elif registered_country_geoname_id:
+                country_id = int(registered_country_geoname_id)
+            else:
+                country_id = None
+            if country_id:
+                self.ipv6_blocks[network] = country_id
+
+    def write_file(self, filename, content):
+        tmp_filename = filename + '.tmp.' + uuid.uuid4().hex + '.tmp'
+        with open(tmp_filename, "w") as tmp_file:
+            tmp_file.write(content)
+        os.rename(tmp_filename, filename)
+
+    def open_zip_entry(self, database, entry):
+        python3 = sys.version_info[0] == 3
+        if python3:
+            return io.TextIOWrapper(zipfile.ZipFile.open(database, entry), encoding="UTF-8")
+        else:
+            return zipfile.ZipFile.open(database, entry)  # Python 2.7 csv module doesn't support Unicode input
+
+    def convert(self):
+        if not os.path.isfile(self.zipfile):
+            sys.exit("fatal error: '%s' not exists" % self.zipfile)
+        if not zipfile.is_zipfile(self.zipfile):
+            sys.exit("fatal error: '%s' is not valid zip file" % self.zipfile)
+        with zipfile.ZipFile(self.zipfile, 'r') as database:
+            for entry in database.infolist():
+                if entry.filename.endswith("/GeoLite2-Country-Locations-en.csv"):
+                    self.read_country_codes(self.open_zip_entry(database, entry))
+                if entry.filename.endswith("/GeoLite2-Country-Blocks-IPv4.csv"):
+                    self.read_ipv4_blocks(self.open_zip_entry(database, entry))
+                if entry.filename.endswith("/GeoLite2-Country-Blocks-IPv6.csv") and not self.args.exclude_ipv6:
+                    self.read_ipv6_blocks(self.open_zip_entry(database, entry))
+        out = list()
+        for network in sorted(self.ipv4_blocks):
+            geoname_id = self.ipv4_blocks[network]
+            country_code = self.country_codes.get(geoname_id)
+            if country_code:
+                line = "%s %s;" % (network, country_code)
+                out.append(line)
+        if not self.args.exclude_ipv6:
+            for network in sorted(self.ipv6_blocks):
+                geoname_id = self.ipv6_blocks[network]
+                country_code = self.country_codes.get(geoname_id)
+                if country_code:
+                    line = "%s %s;" % (network, country_code)
+                    out.append(line)
+        content = "\n".join(out)
+        self.write_file(self.dest, content)
+
+    def reload_nginx(self):
+        if os.path.exists(self.args.nginx_pid_filename):
+            with open(self.args.nginx_pid_filename) as pid_file:
+                pid = int(pid_file.readline())
+            if pid > 0:
+                os.kill(pid, signal.SIGHUP)
+
+    def run(self):
+        if self.args.download:
+            self.download()
+        if self.args.convert:
+            self.convert()
+        if self.args.reload_nginx:
+            self.reload_nginx()
+
+
+def main():
+    src = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip"
+    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert GeoLite2 Country database to nginx format")
+    parser.add_argument("--src", required=False, metavar="SRC", default=src, dest="src", help="uri of GeoLite2 Country database in CSV format")
+    parser.add_argument("--dest", required=False, metavar="DEST", default="geoip_country_code.conf", dest="dest", help="destination file name (geoip_country_code.conf)")
+    parser.add_argument("--work-dir", required=False, metavar="WORKDIR", default="/etc/nginx/geo", dest="work_dir", help="path to working directory (/etc/nginx/geo)")
+    parser.add_argument("--nginx-pid", required=False, metavar="PIDFILE", default="/var/run/nginx.pid", dest="nginx_pid_filename", help="path to nginx pid file (/var/run/nginx.pid)")
+    parser.add_argument("--download", required=False, action="store_true", dest="download", help="download GeoLite2-Country-CSV.zip")
+    parser.add_argument("--convert", required=False, action="store_true", dest="convert", help="convert GeoLite2-Country-CSV.zip to nginx format")
+    parser.add_argument("--exclude-ipv6", required=False, action="store_true", dest="exclude_ipv6", help="exclude IPv6 networks")
+    parser.add_argument("--reload-nginx", required=False, action="store_true", dest="reload_nginx", help="reload nginx")
+    args = parser.parse_args()
+    if not (args.download or args.convert or args.reload_nginx):
+        parser.print_help()
+    else:
+        Convertor(args).run()
+
+
+if __name__ == '__main__':
+    main()
