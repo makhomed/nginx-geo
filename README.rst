@@ -24,7 +24,7 @@ Usage
 
     usage: nginx-geo [-h] [--src SRC] [--dest DEST] [--work-dir WORKDIR]
                      [--nginx-pid PIDFILE] [--download] [--convert]
-                     [--exclude-ipv6] [--reload-nginx]
+                     [--exclude-continent] [--exclude-ipv6] [--reload-nginx]
 
     Convert GeoLite2 Country database to nginx format
 
@@ -36,16 +36,17 @@ Usage
       --nginx-pid PIDFILE  path to nginx pid file (/var/run/nginx.pid)
       --download           download GeoLite2-Country-CSV.zip
       --convert            convert GeoLite2-Country-CSV.zip to nginx format
+      --exclude-continent  exclude continent code if country code is unknown
       --exclude-ipv6       exclude IPv6 networks
       --reload-nginx       reload nginx
 
-``--src`` by default ``http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip``
+``--src`` by default is ``http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip``
 
-``--dest`` by default ``geoip_country_code.conf``
+``--dest`` by default is ``geoip_country_code.conf``
 
-``--work-dir`` by default ``/etc/nginx/geo``
+``--work-dir`` by default is ``/etc/nginx/geo``
 
-``--nginx-pid`` by default ``/var/run/nginx.pid``
+``--nginx-pid`` by default is ``/var/run/nginx.pid``
 
 Automation via cron
 -------------------
@@ -58,7 +59,7 @@ Configure cron job, for example, in file ``/etc/cron.d/nginx-geo``:
 
     0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --reload-nginx
 
-Or if only IPv4 networks needed:
+Or, if only IPv4 networks needed:
 
 .. code-block:: none
 
