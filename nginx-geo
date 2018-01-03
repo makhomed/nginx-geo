@@ -11,6 +11,11 @@ import sys
 import uuid
 import zipfile
 
+__author__ = "Gena Makhomed"
+__license__ = "BSD 2-Clause"
+__contact__ = "https://github.com/makhomed/nginx-geo"
+__version__ = "1.0.0"
+
 
 class Process(object):
     def __init__(self, *args):
@@ -41,7 +46,7 @@ class Convertor(object):
         self.ipv6_blocks = list()
 
     def download(self):
-        args = 'curl', '--silent', '--output', self.zipfile, '--time-cond', self.zipfile, '--remote-time', self.args.src
+        args = 'curl', '--silent', '--location', '--output', self.zipfile, '--time-cond', self.zipfile, '--remote-time', self.args.src
         process = Process(*args)
         if process.failed():
             process.print_info("fatal error")
@@ -95,11 +100,11 @@ class Convertor(object):
         os.rename(tmp_filename, filename)
 
     def open_zip_entry(self, database, entry):
-        python3 = sys.version_info[0] == 3
-        if python3:
-            return io.TextIOWrapper(zipfile.ZipFile.open(database, entry), encoding="UTF-8")
-        else:
+        python2 = sys.version_info[0] == 2
+        if python2:
             return zipfile.ZipFile.open(database, entry)  # Python 2.7 csv module doesn't support Unicode input
+        else:
+            return io.TextIOWrapper(zipfile.ZipFile.open(database, entry), encoding="UTF-8")
 
     def convert(self):
         if not os.path.isfile(self.zipfile):
