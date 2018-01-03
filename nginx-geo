@@ -12,8 +12,8 @@ import uuid
 import zipfile
 
 __author__ = "Gena Makhomed"
-__license__ = "BSD 2-Clause"
 __contact__ = "https://github.com/makhomed/nginx-geo"
+__license__ = "BSD 2-Clause"
 __version__ = "1.0.0"
 
 
@@ -54,12 +54,19 @@ class Convertor(object):
 
     def read_country_codes(self, file_like_object):
         for row in csv.reader(file_like_object):
-            geoname_id, dummy_locale_code, dummy_continent_code, dummy_continent_name, country_iso_code, dummy_country_name = row
+            geoname_id, dummy_locale_code, continent_code, dummy_continent_name, country_iso_code, dummy_country_name = row
             if geoname_id == 'geoname_id':
                 continue
             if country_iso_code:
+                country_code = country_iso_code.upper()
+            else:
+                if self.args.exclude_continent_code:
+                    country_code = None
+                else:
+                    country_code = continent_code.lower()
+            if country_code:
                 country_id = int(geoname_id)
-                self.country_codes[country_id] = country_iso_code
+                self.country_codes[country_id] = country_code
 
     def read_ipv4_blocks(self, file_like_object):
         for row in csv.reader(file_like_object):
@@ -159,6 +166,7 @@ def main():
     parser.add_argument("--nginx-pid", required=False, metavar="PIDFILE", default="/var/run/nginx.pid", dest="nginx_pid_filename", help="path to nginx pid file (/var/run/nginx.pid)")
     parser.add_argument("--download", required=False, action="store_true", dest="download", help="download GeoLite2-Country-CSV.zip")
     parser.add_argument("--convert", required=False, action="store_true", dest="convert", help="convert GeoLite2-Country-CSV.zip to nginx format")
+    parser.add_argument("--exclude-continent", required=False, action="store_true", dest="exclude_continent_code", help="exclude continent code if country code is unknown")
     parser.add_argument("--exclude-ipv6", required=False, action="store_true", dest="exclude_ipv6", help="exclude IPv6 networks")
     parser.add_argument("--reload-nginx", required=False, action="store_true", dest="reload_nginx", help="reload nginx")
     args = parser.parse_args()
