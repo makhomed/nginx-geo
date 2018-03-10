@@ -54,7 +54,7 @@ class Convertor(object):
 
     def read_country_codes(self, file_like_object):
         for row in csv.reader(file_like_object):
-            geoname_id, dummy_locale_code, continent_code, dummy_continent_name, country_iso_code, dummy_country_name = row
+            geoname_id, dummy_locale_code, continent_code, dummy_continent_name, country_iso_code, dummy_country_name, dummy_is_in_european_union = row
             if geoname_id == 'geoname_id':
                 continue
             if country_iso_code:
