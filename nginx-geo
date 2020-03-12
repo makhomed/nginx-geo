@@ -41,7 +41,7 @@ class Convertor(object):
         if not os.path.isdir(self.args.work_dir):
             os.mkdir(self.args.work_dir)
         self.dest = os.path.join(self.args.work_dir, self.args.dest)
-        self.zipfile = os.path.join(self.args.work_dir, os.path.basename(self.args.src))
+        self.zipfile = os.path.join(self.args.work_dir, 'GeoLite2-Country-CSV.zip')
         self.country_codes = dict()
         self.ipv4_blocks = list()
         self.ipv6_blocks = list()
@@ -160,8 +160,8 @@ class Convertor(object):
 
 def main():
     src = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip"
-    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert MaxMind GeoLite2 Country database to nginx format")
-    parser.add_argument("--src", required=False, metavar="SRC", default=src, dest="src", help="uri of GeoLite2 Country database in CSV format")
+    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert MaxMind GeoLite2 Country CSV database to nginx format")
+    parser.add_argument("--src", required=True, metavar="SRC", default=src, dest="src", help="uri of GeoLite2 Country database in CSV format")
     parser.add_argument("--dest", required=False, metavar="DEST", default="geoip_country_code.conf", dest="dest", help="destination file name (geoip_country_code.conf)")
     parser.add_argument("--work-dir", required=False, metavar="WORKDIR", default="/etc/nginx/geo", dest="work_dir", help="path to working directory (/etc/nginx/geo)")
     parser.add_argument("--nginx-pid", required=False, metavar="PIDFILE", default="/var/run/nginx.pid", dest="nginx_pid_filename", help="path to nginx pid file (/var/run/nginx.pid)")
