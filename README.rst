@@ -26,7 +26,7 @@ Usage
                      [--nginx-pid PIDFILE] [--download] [--convert]
                      [--exclude-continent] [--exclude-ipv6] [--reload-nginx]
 
-    Convert GeoLite2 Country database to nginx format
+    Convert MaxMind GeoLite2 Country database to nginx format
 
     optional arguments:
       -h, --help           show this help message and exit
