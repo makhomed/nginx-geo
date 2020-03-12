@@ -160,7 +160,7 @@ class Convertor(object):
 
 def main():
     src = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip"
-    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert GeoLite2 Country database to nginx format")
+    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert MaxMind GeoLite2 Country database to nginx format")
     parser.add_argument("--src", required=False, metavar="SRC", default=src, dest="src", help="uri of GeoLite2 Country database in CSV format")
     parser.add_argument("--dest", required=False, metavar="DEST", default="geoip_country_code.conf", dest="dest", help="destination file name (geoip_country_code.conf)")
     parser.add_argument("--work-dir", required=False, metavar="WORKDIR", default="/etc/nginx/geo", dest="work_dir", help="path to working directory (/etc/nginx/geo)")
