@@ -22,11 +22,12 @@ Usage
 
 .. code-block:: none
 
-    usage: nginx-geo [-h] [--src SRC] [--dest DEST] [--work-dir WORKDIR]
+
+    usage: nginx-geo [-h] --src SRC [--dest DEST] [--work-dir WORKDIR]
                      [--nginx-pid PIDFILE] [--download] [--convert]
                      [--exclude-continent] [--exclude-ipv6] [--reload-nginx]
 
-    Convert MaxMind GeoLite2 Country database to nginx format
+    Convert MaxMind GeoLite2 Country CSV database to nginx format
 
     optional arguments:
       -h, --help           show this help message and exit
@@ -40,7 +41,8 @@ Usage
       --exclude-ipv6       exclude IPv6 networks
       --reload-nginx       reload nginx
 
-``--src`` by default is ``http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip``
+
+``--src`` by default was ``http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip``
 
 ``--dest`` by default is ``geoip_country_code.conf``
 
@@ -57,7 +59,7 @@ Configure cron job, for example, in file ``/etc/cron.d/nginx-geo``:
 
     RANDOM_DELAY=360
 
-    0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --reload-nginx
+    0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --reload-nginx --src SRC_URI
 
 Or, if only IPv4 networks needed:
 
@@ -65,7 +67,7 @@ Or, if only IPv4 networks needed:
 
     RANDOM_DELAY=360
 
-    0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --exclude-ipv6 --reload-nginx
+    0 0 * * * root /opt/nginx-geo/nginx-geo --download --convert --exclude-ipv6 --reload-nginx --src SRC_URI
 
 nginx configuration
 -------------------
