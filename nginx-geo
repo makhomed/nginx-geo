@@ -138,7 +138,7 @@ class Convertor(object):
                 if country_code:
                     line = "%s %s;" % (network, country_code)
                     out.append(line)
-        content = "\n".join(out)
+        content = "\n".join(out) + "\n"
         self.write_file(self.dest, content)
 
     def reload_nginx(self):
