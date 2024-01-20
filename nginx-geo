@@ -70,7 +70,7 @@ class Convertor(object):
 
     def read_ipv4_blocks(self, file_like_object):
         for row in csv.reader(file_like_object):
-            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, dummy_is_anonymous_proxy, dummy_is_satellite_provider = row
+            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, _is_anonymous_proxy, _is_satellite_provider, _is_anycast = row
             if geoname_id == 'geoname_id':
                 continue
             if represented_country_geoname_id:
@@ -86,7 +86,7 @@ class Convertor(object):
 
     def read_ipv6_blocks(self, file_like_object):
         for row in csv.reader(file_like_object):
-            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, dummy_is_anonymous_proxy, dummy_is_satellite_provider = row
+            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, _is_anonymous_proxy, _is_satellite_provider, _is_anycast = row
             if geoname_id == 'geoname_id':
                 continue
             if represented_country_geoname_id:
