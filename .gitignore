@@ -1,0 +1,10 @@
+
+# configuration files
+*.toml
+
+# working directory
+/var/
+
+# vim swap files
+*.swp
+
