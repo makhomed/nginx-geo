@@ -1,180 +1,433 @@
 #!/usr/bin/python3 -u
 
-import argparse
+__author__ = "Hennadii Makhomed"
+__contact__ = "https://github.com/makhomed/nginx-geo"
+__license__ = "GNU Affero General Public License, version 3.0 or later"
+__version__ = "2.0.0"
+
+# imports {{{
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib
+    except ModuleNotFoundError:
+        import pip._vendor.tomli as tomllib
+
+from pathlib import Path, PurePosixPath
+
 import csv
-import io
+import json
 import os
-import os.path
+import re
+import requests
+import secrets
+import shutil
 import signal
-import subprocess
 import sys
-import uuid
+import time
 import zipfile
 
-__author__ = "Gena Makhomed"
-__contact__ = "https://github.com/makhomed/nginx-geo"
-__license__ = "BSD 2-Clause"
-__version__ = "1.0.0"
+# }}}
 
+# variables {{{
 
-class Process(object):
-    def __init__(self, *args):
-        self.args = args
-        process = subprocess.Popen(args, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        self.stdout, self.stderr = process.communicate()
-        self.returncode = process.returncode
+configuration_filename = Path('/opt/nginx-geo/nginx-geo.toml')
 
-    def failed(self):
-        return self.returncode != 0
+local_database_var_dir = Path('/opt/nginx-geo/var')
+local_database_zipfile = Path('/opt/nginx-geo/var/GeoLite2-Country-CSV.zip')
+local_database_version = Path('/opt/nginx-geo/var/GeoLite2-Country-CSV.zip.version')
 
-    def print_info(self, message):
-        print(message + ": Process(", self.args, ") failed")
-        print("returncode:", self.returncode)
-        print("stdout:", self.stdout)
-        print("stderr:", self.stderr)
+default_account_id = ''
+default_license_key = ''
+default_database_url = 'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip'
+default_output_dir = '/etc/nginx/include'
+default_generate_separate_ipv4_and_ipv6_configuration_files = False
+default_mark_tor_exit_nodes_with_T1_country_code = True
+default_nginx_pid_file = '/run/nginx.pid'
+default_reload_nginx = True
 
+account_id = None
+license_key = None
+database_url = None
+output_dir = None
+generate_separate_ipv4_and_ipv6_configuration_files = None
+mark_tor_exit_nodes_with_T1_country_code = None
+nginx_pid_file = None
+reload_nginx = None
 
-class Convertor(object):
-    def __init__(self, args):
-        self.args = args
-        if not os.path.isdir(self.args.work_dir):
-            os.mkdir(self.args.work_dir)
-        self.dest = os.path.join(self.args.work_dir, self.args.dest)
-        self.zipfile = os.path.join(self.args.work_dir, 'GeoLite2-Country-CSV.zip')
-        self.country_codes = dict()
-        self.ipv4_blocks = list()
-        self.ipv6_blocks = list()
+GEOLITE2_COUNTRY_TARGET_BASENAMES = {
+    'GeoLite2-Country-Blocks-IPv4.csv',
+    'GeoLite2-Country-Blocks-IPv6.csv',
+    'GeoLite2-Country-Locations-en.csv',
+}
 
-    def download(self):
-        args = 'curl', '--silent', '--location', '--output', self.zipfile, '--time-cond', self.zipfile, '--remote-time', self.args.src
-        process = Process(*args)
-        if process.failed():
-            process.print_info("fatal error")
-            sys.exit(1)
+blocks_ip_v4 = local_database_var_dir / 'GeoLite2-Country-Blocks-IPv4.csv'
+blocks_ip_v6 = local_database_var_dir / 'GeoLite2-Country-Blocks-IPv6.csv'
+locations_en = local_database_var_dir / 'GeoLite2-Country-Locations-en.csv'
 
-    def read_country_codes(self, file_like_object):
-        for row in csv.reader(file_like_object):
-            geoname_id, dummy_locale_code, continent_code, dummy_continent_name, country_iso_code, dummy_country_name, dummy_is_in_european_union = row
-            if geoname_id == 'geoname_id':
-                continue
-            if country_iso_code:
-                country_code = country_iso_code.upper()
-            else:
-                if self.args.exclude_continent_code:
-                    country_code = None
-                else:
-                    country_code = continent_code.lower()
-            if country_code:
-                country_id = int(geoname_id)
-                self.country_codes[country_id] = country_code
+blocks_ip_v4_fieldnames = 'network,geoname_id,registered_country_geoname_id,represented_country_geoname_id,is_anonymous_proxy,is_satellite_provider,is_anycast'
+blocks_ip_v6_fieldnames = 'network,geoname_id,registered_country_geoname_id,represented_country_geoname_id,is_anonymous_proxy,is_satellite_provider,is_anycast'
+locations_en_fieldnames = 'geoname_id,locale_code,continent_code,continent_name,country_iso_code,country_name,is_in_european_union'
 
-    def read_ipv4_blocks(self, file_like_object):
-        for row in csv.reader(file_like_object):
-            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, _is_anonymous_proxy, _is_satellite_provider, _is_anycast = row
-            if geoname_id == 'geoname_id':
-                continue
-            if represented_country_geoname_id:
-                country_id = int(represented_country_geoname_id)
-            elif geoname_id:
-                country_id = int(geoname_id)
-            elif registered_country_geoname_id:
-                country_id = int(registered_country_geoname_id)
-            else:
-                country_id = None
-            if country_id:
-                self.ipv4_blocks.append((network, country_id))
+TOR_EXIT_NODES_IPV4_ONLY_URL = "https://check.torproject.org/exit-addresses"
+TOR_EXIT_NODES_IPV4_IPV6_URL = "https://onionoo.torproject.org/details"
 
-    def read_ipv6_blocks(self, file_like_object):
-        for row in csv.reader(file_like_object):
-            network, geoname_id, registered_country_geoname_id, represented_country_geoname_id, _is_anonymous_proxy, _is_satellite_provider, _is_anycast = row
-            if geoname_id == 'geoname_id':
-                continue
-            if represented_country_geoname_id:
-                country_id = int(represented_country_geoname_id)
-            elif geoname_id:
-                country_id = int(geoname_id)
-            elif registered_country_geoname_id:
-                country_id = int(registered_country_geoname_id)
-            else:
-                country_id = None
-            if country_id:
-                self.ipv6_blocks.append((network, country_id))
+tor_exit_nodes_ipv4_only_filename = local_database_var_dir / 'tor-exit-nodes-ipv4-only.txt'
+tor_exit_nodes_ipv4_ipv6_filename = local_database_var_dir / 'tor-exit-nodes-ipv4-ipv6.json'
 
-    def write_file(self, filename, content):
-        tmp_filename = filename + '.tmp.' + uuid.uuid4().hex + '.tmp'
-        with open(tmp_filename, "w") as tmp_file:
-            tmp_file.write(content)
-        os.rename(tmp_filename, filename)
+geo_info = dict()
+net_ipv4 = dict()
+net_ipv6 = dict()
 
-    def open_zip_entry(self, database, entry):
-        python2 = sys.version_info[0] == 2
-        if python2:
-            return zipfile.ZipFile.open(database, entry)  # Python 2.7 csv module doesn't support Unicode input
-        else:
-            return io.TextIOWrapper(zipfile.ZipFile.open(database, entry), encoding="UTF-8")
+tor_ipv4 = list()
+tor_ipv6 = list()
 
-    def convert(self):
-        if not os.path.isfile(self.zipfile):
-            sys.exit("fatal error: '%s' not exists" % self.zipfile)
-        if not zipfile.is_zipfile(self.zipfile):
-            sys.exit("fatal error: '%s' is not valid zip file" % self.zipfile)
-        with zipfile.ZipFile(self.zipfile, 'r') as database:
-            for entry in database.infolist():
-                if entry.filename.endswith("/GeoLite2-Country-Locations-en.csv"):
-                    self.read_country_codes(self.open_zip_entry(database, entry))
-                if entry.filename.endswith("/GeoLite2-Country-Blocks-IPv4.csv"):
-                    self.read_ipv4_blocks(self.open_zip_entry(database, entry))
-                if entry.filename.endswith("/GeoLite2-Country-Blocks-IPv6.csv") and not self.args.exclude_ipv6:
-                    self.read_ipv6_blocks(self.open_zip_entry(database, entry))
-        out = list()
-        for network, country_id in self.ipv4_blocks:
-            country_code = self.country_codes.get(country_id)
-            if country_code:
-                line = "%s %s;" % (network, country_code)
-                out.append(line)
-        if not self.args.exclude_ipv6:
-            for network, country_id in self.ipv6_blocks:
-                country_code = self.country_codes.get(country_id)
-                if country_code:
-                    line = "%s %s;" % (network, country_code)
-                    out.append(line)
-        content = "\n".join(out) + "\n"
-        self.write_file(self.dest, content)
+requests_connect_timeout = 10
+requests_read_timeout = 10
 
-    def reload_nginx(self):
-        if os.path.exists(self.args.nginx_pid_filename):
-            with open(self.args.nginx_pid_filename) as pid_file:
-                pid = int(pid_file.readline())
-            if pid > 0:
-                os.kill(pid, signal.SIGHUP)
+# }}}
 
-    def run(self):
-        if self.args.download:
-            self.download()
-        if self.args.convert:
-            self.convert()
-        if self.args.reload_nginx:
-            self.reload_nginx()
+def fatal(message): # {{{
+    print(file=sys.stderr, flush=True)
+    print(message, file=sys.stderr, flush=True)
+    print(file=sys.stderr, flush=True)
+    sys.exit(1)
+# }}}
 
+def atomic_write_text(content, filename): # {{{
+    assert isinstance(content, str)
+    assert isinstance(filename, Path)
+    tmp_filename = filename.with_name(filename.name + '.tmp.' + secrets.token_hex() + '.tmp')
+    tmp_filename.write_text(content)
+    tmp_filename.rename(filename)
+# }}}
 
-def main():
-    src = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip"
-    parser = argparse.ArgumentParser(prog="nginx-geo", description="Convert MaxMind GeoLite2 Country CSV database to nginx format")
-    parser.add_argument("--src", required=True, metavar="SRC", default=src, dest="src", help="uri of GeoLite2 Country database in CSV format")
-    parser.add_argument("--dest", required=False, metavar="DEST", default="geoip_country_code.conf", dest="dest", help="destination file name (geoip_country_code.conf)")
-    parser.add_argument("--work-dir", required=False, metavar="WORKDIR", default="/etc/nginx/geo", dest="work_dir", help="path to working directory (/etc/nginx/geo)")
-    parser.add_argument("--nginx-pid", required=False, metavar="PIDFILE", default="/var/run/nginx.pid", dest="nginx_pid_filename", help="path to nginx pid file (/var/run/nginx.pid)")
-    parser.add_argument("--download", required=False, action="store_true", dest="download", help="download GeoLite2-Country-CSV.zip")
-    parser.add_argument("--convert", required=False, action="store_true", dest="convert", help="convert GeoLite2-Country-CSV.zip to nginx format")
-    parser.add_argument("--exclude-continent", required=False, action="store_true", dest="exclude_continent_code", help="exclude continent code if country code is unknown")
-    parser.add_argument("--exclude-ipv6", required=False, action="store_true", dest="exclude_ipv6", help="exclude IPv6 networks")
-    parser.add_argument("--reload-nginx", required=False, action="store_true", dest="reload_nginx", help="reload nginx")
-    args = parser.parse_args()
-    if not (args.download or args.convert or args.reload_nginx):
-        parser.print_help()
+def init(): # {{{
+    local_database_var_dir.mkdir(parents=True, exist_ok=True)
+    if configuration_filename.is_file():
+        config = tomllib.loads(configuration_filename.read_text())
     else:
-        Convertor(args).run()
+        fatal(f'required configuration file {configuration_filename}')
+    if 'account_id' not in config: config['account_id'] = default_account_id
+    if 'license_key' not in config: config['license_key'] = default_license_key
+    if 'database_url' not in config: config['database_url'] = default_database_url
+    if 'output_dir' not in config: config['output_dir'] = default_output_dir
+    if 'generate_separate_ipv4_and_ipv6_configuration_files' not in config: 
+        config['generate_separate_ipv4_and_ipv6_configuration_files'] = default_generate_separate_ipv4_and_ipv6_configuration_files
+    if 'mark_tor_exit_nodes_with_T1_country_code' not in config: 
+        config['mark_tor_exit_nodes_with_T1_country_code'] = default_mark_tor_exit_nodes_with_T1_country_code
+    if 'nginx_pid_file' not in config: config['nginx_pid_file'] = default_nginx_pid_file
+    if 'reload_nginx' not in config: config['reload_nginx'] = default_reload_nginx
+    global account_id
+    global license_key
+    global output_dir
+    global generate_separate_ipv4_and_ipv6_configuration_files
+    global mark_tor_exit_nodes_with_T1_country_code
+    global nginx_pid_file
+    global database_url
+    global reload_nginx
+    account_id = str(config['account_id'])
+    license_key = str(config['license_key'])
+    database_url = str(config['database_url'])
+    output_dir = Path(config['output_dir'])
+    generate_separate_ipv4_and_ipv6_configuration_files = bool(config['generate_separate_ipv4_and_ipv6_configuration_files'])
+    mark_tor_exit_nodes_with_T1_country_code = bool(config['mark_tor_exit_nodes_with_T1_country_code'])
+    nginx_pid_file = Path(config['nginx_pid_file'])
+    reload_nginx = bool(config['reload_nginx'])
+# }}}
 
+def request(method): # {{{
+    timeout = ( requests_connect_timeout, requests_read_timeout )
+    if account_id != '' and license_key != '':
+        r = method(database_url, auth=(account_id, license_key), timeout=timeout)
+    else:
+        r = method(database_url, timeout=timeout)
+    assert r.status_code == 200
+    if 'last-modified' in r.headers:
+        last_modified = r.headers['last-modified']
+    else:
+        last_modified = time.time()
+    if 'content-disposition' in r.headers:
+        content_disposition = r.headers['content-disposition']
+        database_filename = content_disposition.split('=')[1]
+    else: 
+        database_filename = 'GeoLite2-Country-CSV.zip'
+    return r, last_modified, database_filename
+#}}}
+
+def is_new_version_available(): # {{{
+    r, last_modified, database_filename = request(requests.head)
+    remote_version = f'{database_filename} {last_modified}'
+    if 'content-length' in r.headers:
+        remote_content_length = r.headers['content-length']
+    else:
+        remote_content_length = -1 * time.time()
+    local_version = None
+    local_content_length = None
+    if local_database_version.is_file(): local_version = local_database_version.read_text()
+    if local_database_zipfile.is_file(): local_content_length = local_database_zipfile.stat().st_size
+    new_version_available = local_version != remote_version or local_content_length != remote_content_length
+    return new_version_available
+# }}}
+
+def get_server_database_zipfile(): # {{{
+    r, last_modified, database_filename = request(requests.get)
+    version = f'{database_filename} {last_modified}'
+    local_database_zipfile.write_bytes(r.content)
+    local_database_version.write_text(version)
+# }}}
+
+def conditional_update_database_zipfile(): # {{{
+    if is_new_version_available():
+        get_server_database_zipfile()
+# }}}
+
+def extract_csv_from_zipfile(): # {{{
+    found = set()
+    with zipfile.ZipFile(local_database_zipfile) as zf:
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            p = PurePosixPath(info.filename)
+            if p.name in GEOLITE2_COUNTRY_TARGET_BASENAMES:
+                out_path = local_database_var_dir / p.name
+                with zf.open(info, "r") as src, out_path.open("wb") as dst:
+                    shutil.copyfileobj(src, dst, length= 1024 * 1024 )
+                found.add(p.name)
+    missing = GEOLITE2_COUNTRY_TARGET_BASENAMES - found
+    if missing:
+        missing_files = ', '.join(sorted(missing))
+        fatal(f'bad {local_database_zipfile} archive, not found files: {missing_files}')
+# }}}
+
+def ensure_expected_fieldnames(): # {{{
+    error = False
+    for filename, expected_fieldnames in (
+                    ( blocks_ip_v4, blocks_ip_v4_fieldnames ),
+                    ( blocks_ip_v6, blocks_ip_v6_fieldnames ),
+                    ( locations_en, locations_en_fieldnames ),
+                    ):
+        with filename.open() as f:
+            actual_fieldnames = f.readline().strip()
+        if actual_fieldnames != expected_fieldnames:
+            print(f'\nfile {filename.name} unexpected filednames:\n\n  actual: {actual_fieldnames}\n\nexpected: {expected_fieldnames}\n')
+            error = True
+    if error:
+        sys.exit(1)
+# }}}
+
+def read_csv_files_to_memory(): # {{{
+
+    with locations_en.open() as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            geoname_id = row['geoname_id']
+            assert geoname_id
+            assert geoname_id not in geo_info
+            geo_info[geoname_id] = row
+        
+    with blocks_ip_v4.open() as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            network = row['network']
+            assert network
+            assert network not in net_ipv4
+            net_ipv4[network] = row
+
+    with blocks_ip_v6.open() as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            network = row['network']
+            assert network
+            assert network not in net_ipv6
+            net_ipv6[network] = row
+# }}}
+
+def fetch_tor_ipv4_only_exit_nodes_from_tordnsel(): # {{{
+    headers = {"User-Agent": "tor-exits-now/1.3", "Accept-Encoding": "gzip"}
+    timeout = (requests_connect_timeout, requests_read_timeout)
+    r = requests.get(TOR_EXIT_NODES_IPV4_ONLY_URL, headers=headers, timeout=timeout)
+    r.raise_for_status()
+    atomic_write_text(r.text, tor_exit_nodes_ipv4_only_filename)
+    out_ipv4 = set()
+    for line in r.text.splitlines():
+        if line.startswith("ExitAddress "):
+            parts = line.split()
+            if len(parts) >= 2:
+                out_ipv4.add(parts[1].strip())
+    return out_ipv4
+# }}}
+
+def fetch_tor_ipv4_and_ipv6_exit_nodes_from_onionoo(): # {{{
+    _RE_OR_V4 = re.compile(r"^(?P<ip>(?:\d{1,3}\.){3}\d{1,3})(?::\d+(?:-\d+)?)?$")
+    _RE_OR_V6 = re.compile(r"^\[(?P<ip>[0-9A-Fa-f:]+)\]:(?P<port>\d+(?:-\d+)?)$")
+    def _split_or_addr(s):
+        m4 = _RE_OR_V4.match(s)
+        if m4:
+            return "v4", m4.group("ip")
+        m6 = _RE_OR_V6.match(s)
+        if m6:
+            return "v6", m6.group("ip").lower()
+        return None, None
+    headers = {"User-Agent": "tor-exits-now/1.3", "Accept-Encoding": "gzip"}
+    timeout = (requests_connect_timeout, requests_read_timeout)
+    params = {
+        "type": "relay",
+        "running": "true",
+        "flag": "Exit",
+        "fields": "flags,or_addresses,exit_policy_v6_summary"
+    }
+    r = requests.get(TOR_EXIT_NODES_IPV4_IPV6_URL, headers=headers, timeout=timeout, params=params)
+    r.raise_for_status()
+    data = r.json()
+    atomic_write_text(json.dumps(data, indent=4), tor_exit_nodes_ipv4_ipv6_filename)
+    out_ipv4 = set()
+    out_ipv6 = set()
+    for r in data.get("relays", []):
+        flags = set(r.get("flags") or [])
+        if "Exit" not in flags:
+            continue
+        v6sum = r.get("exit_policy_v6_summary") or {}
+        if not v6sum.get("accept"):
+            continue
+        for addr in r.get("or_addresses") or []:
+            kind, ip = _split_or_addr(addr)
+            if kind == "v6":
+                out_ipv6.add(ip)
+            if kind == "v4":
+                out_ipv4.add(ip)
+    return out_ipv4, out_ipv6
+# }}}
+
+def fetch_tor_exit_nodes(): # {{{
+    tor_ipv4_exit_nodes_via_method_1 = fetch_tor_ipv4_only_exit_nodes_from_tordnsel()
+    tor_ipv4_exit_nodes_via_method_2, tor_ipv6_exit_nodes = fetch_tor_ipv4_and_ipv6_exit_nodes_from_onionoo()
+    tor_ipv4_exit_nodes = tor_ipv4_exit_nodes_via_method_1 | tor_ipv4_exit_nodes_via_method_2
+    global tor_ipv4
+    global tor_ipv6
+    tor_ipv4 = sorted(list(tor_ipv4_exit_nodes))
+    tor_ipv6 = sorted(list(tor_ipv6_exit_nodes))
+# }}}
+
+def write_include_files(): # {{{
+    out_country_dict = dict()
+    out_country_name = list()
+    out_country_code = list()
+    out_country_code.append('default XX;')
+    if generate_separate_ipv4_and_ipv6_configuration_files:
+        out_country_code_ipv4 = list()
+        out_country_code_ipv4.append('default XX;')
+        out_country_code_ipv6 = list()
+        out_country_code_ipv6.append('default XX;')
+
+    for network in net_ipv4:
+        registered_country_geoname_id = net_ipv4[network]['registered_country_geoname_id']
+        geoname_id = net_ipv4[network]['geoname_id']
+        if not geoname_id:
+            geoname_id = registered_country_geoname_id
+        country_code = geo_info[geoname_id]['country_iso_code']
+        continent_name = geo_info[geoname_id]['continent_name']
+        country_name = geo_info[geoname_id]['country_name']
+        if not country_code:
+           country_code = geo_info[registered_country_geoname_id]['country_iso_code']
+           continent_name = geo_info[registered_country_geoname_id]['continent_name']
+           country_name = geo_info[registered_country_geoname_id]['country_name']
+        assert len(country_code) == 2 and country_code.isupper()
+        network_country_code = f'{network} {country_code};'
+        out_country_code.append(network_country_code)
+        if generate_separate_ipv4_and_ipv6_configuration_files:
+            out_country_code_ipv4.append(network_country_code)
+        country_description = f'"{continent_name} / {country_name}"'
+        if country_code in out_country_dict:
+            assert country_description == out_country_dict[country_code]
+        else:
+            out_country_dict[country_code] = country_description
+
+    if mark_tor_exit_nodes_with_T1_country_code:
+        for ipv4 in tor_ipv4:
+            line = f'{ipv4} T1;'
+            out_country_code.append(line)
+            if generate_separate_ipv4_and_ipv6_configuration_files:
+                out_country_code_ipv4.append(line)
+
+    for network in net_ipv6:
+        registered_country_geoname_id = net_ipv6[network]['registered_country_geoname_id']
+        geoname_id = net_ipv6[network]['geoname_id']
+        if not geoname_id:
+            geoname_id = registered_country_geoname_id
+        country_code = geo_info[geoname_id]['country_iso_code']
+        continent_name = geo_info[geoname_id]['continent_name']
+        country_name = geo_info[geoname_id]['country_name']
+        if not country_code:
+           country_code = geo_info[registered_country_geoname_id]['country_iso_code']
+           continent_name = geo_info[registered_country_geoname_id]['continent_name']
+           country_name = geo_info[registered_country_geoname_id]['country_name']
+        assert len(country_code) == 2 and country_code.isupper()
+        network_country_code = f'{network} {country_code};'
+        out_country_code.append(network_country_code)
+        if generate_separate_ipv4_and_ipv6_configuration_files:
+            out_country_code_ipv6.append(network_country_code)
+        country_description = f'"{continent_name} / {country_name}"'
+        if country_code in out_country_dict:
+            assert country_description == out_country_dict[country_code]
+        else:
+            out_country_dict[country_code] = country_description
+    
+    if mark_tor_exit_nodes_with_T1_country_code:
+        for ipv6 in tor_ipv6:
+            line = f'{ipv6} T1;'
+            out_country_code.append(line)
+            if generate_separate_ipv4_and_ipv6_configuration_files:
+                out_country_code_ipv6.append(line)
+
+    geoip_country_name = output_dir / 'geoip_country_name.conf'
+    geoip_country_code = output_dir / 'geoip_country_code.conf'
+    if generate_separate_ipv4_and_ipv6_configuration_files:
+        geoip_country_code_ipv4 = output_dir / 'geoip_country_code_ipv4.conf'
+        geoip_country_code_ipv6 = output_dir / 'geoip_country_code_ipv6.conf'
+
+    assert 'XX' not in out_country_dict
+    out_country_dict['XX'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY"';
+    assert 'T1' not in out_country_dict
+    out_country_dict['T1'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY / TOR NETWORK EXIT NODES"';
+    for country_code in sorted(list(out_country_dict)):
+        country_description = out_country_dict[country_code]
+        out_country_name.append(f'{country_code} {country_description};')
+
+    atomic_write_text( '\n'.join(out_country_name) + '\n', geoip_country_name )
+    atomic_write_text( '\n'.join(out_country_code) + '\n', geoip_country_code )
+    if generate_separate_ipv4_and_ipv6_configuration_files:
+        atomic_write_text( '\n'.join(out_country_code_ipv4) + '\n', geoip_country_code_ipv4 )
+        atomic_write_text( '\n'.join(out_country_code_ipv6) + '\n', geoip_country_code_ipv6 )
+# }}}
+
+def reload_nginx_daemon(): # {{{
+    if reload_nginx:
+        if nginx_pid_file.is_file():
+            pid = nginx_pid_file.read_text().strip()
+            try:
+                os.kill(int(pid), signal.SIGHUP)
+            except ProcessLookupError:
+                fatal(f'reload nginx failed: process lookup error when try to send HUP signal to process with pid {pid} from nginx pid file {nginx_pid_file}')
+            except PermissionError:
+                fatal(f'reload nginx failed: permission denied error when try to send HUP signal to process with pid {pid} from pid file {nginx_pid_file}')
+            except ValueError:
+                fatal(f'reload nginx failed: unexpected pid {pid} from pid file {nginx_pid_file}')
+        else:
+            fatal(f'reload nginx failed: pid file {nginx_pid_file} not exists')
+# }}}
+
+def main(): # {{{
+    init()
+    conditional_update_database_zipfile()
+    extract_csv_from_zipfile()
+    ensure_expected_fieldnames()
+    read_csv_files_to_memory()
+    fetch_tor_exit_nodes()
+    write_include_files()
+    reload_nginx_daemon()
 
 if __name__ == '__main__':
-    main()
+    main() # }}}
