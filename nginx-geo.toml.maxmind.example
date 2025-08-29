@@ -1,0 +1,17 @@
+
+account_id = "7777777"
+
+license_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+database_url = "https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip"
+
+output_dir = "/etc/nginx/include"
+
+generate_separate_ipv4_and_ipv6_configuration_files = false
+
+mark_tor_exit_nodes_with_T1_country_code = true
+
+nginx_pid_file = "/run/nginx.pid"
+
+reload_nginx = true
+
