@@ -10,25 +10,32 @@ In addition to the [`ISO 3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-cou
 * T1 - Used for clients using the Tor network.
 
 ## Installation
+
 > [!IMPORTANT]
 > Python 3.9+ and the [requests](https://requests.readthedocs.io/), [tomllib](https://docs.python.org/3/library/tomllib.html) or [tomli](https://pypi.org/project/tomli/) modules are required.
+
 > [!NOTE] tomllib is built in starting with Python 3.11; use tomli on Python 3.9–3.10.
+
 ```
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
+
 Also create the `/opt/nginx-geo/nginx-geo.toml` configuration file using the provided examples.
 
 ## Upgrade
+
 ```
 cd /opt/nginx-geo ; git pull
 ```
 
 ## Usage
+
 ```
 # /opt/nginx-geo/nginx-geo
 ```
 
 ## Automation
+
 ```
 # cat /etc/cron.d/nginx-geo
 
@@ -38,6 +45,7 @@ RANDOM_DELAY=360
 ```
 
 ## Configuration
+
 ```
 # cat /etc/nginx/nginx.conf
 
