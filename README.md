@@ -1,13 +1,13 @@
 # nginx-geo (version 2.0.0)
 
-This tool converts the MaxMind GeoLite2 Country database to the nginx format for use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
+Converts the MaxMind GeoLite2 Country database to the nginx format for use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-Similar to Cloudflare's [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), this maps a visitor's IPv4 or IPv6 address to a two-letter country code.
+Similar to Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), it maps a visitor’s IPv4 or IPv6 address to a two-letter country code.
 
 In addition to the [ISO 3166-1 alpha-2 codes](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country codes:
 
-* XX — Used for clients with no country-code data.
-* T1 — Used for clients on the Tor network.
+* XX — Used when no country-code for IP is available.
+* T1 — Used as country-code for Tor network clients.
 
 ## Installation
 
@@ -33,7 +33,7 @@ cd /opt/nginx-geo && git pull
 ```
 
 ## Automation
-`/etc/cron.d/nginx-geo` file:
+`/etc/cron.d/nginx-geo`:
 ```cron
 RANDOM_DELAY=360
 
@@ -41,7 +41,7 @@ RANDOM_DELAY=360
 ```
 
 ## Configuration
-`/etc/nginx/nginx.conf` file:
+`/etc/nginx/nginx.conf`:
 ```nginx
 geo $remote_addr $geoip_country_code {
     include /etc/nginx/include/geoip_country_code.conf;
