@@ -25,12 +25,6 @@ cd /opt && git clone https://github.com/makhomed/nginx-geo.git nginx-geo
 cd /opt/nginx-geo && cp nginx-geo.toml.maxmind.example nginx-geo.toml && vim nginx-geo.toml
 ```
 
-## Upgrade
-
-```bash
-cd /opt/nginx-geo && git pull
-```
-
 ## Usage
 
 - Create the `/etc/cron.d/nginx-geo` file with the following contents:
