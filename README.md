@@ -13,11 +13,13 @@ It maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addi
 > Python 3.9+ and the [requests](https://requests.readthedocs.io/) module are required.
 
 - Clone this repository into the `/opt/nginx-geo` directory:
+
 ```bash
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
 
 - Create the `nginx-geo.toml` configuration file based on the provided examples:
+
 ```bash
 cd /opt/nginx-geo && cp nginx-geo.toml.maxmind.example nginx-geo.toml && vim nginx-geo.toml
 ```
@@ -31,6 +33,7 @@ cd /opt/nginx-geo && git pull
 ## Usage
 
 - Create `/etc/cron.d/nginx-geo` with the following contents:
+
 ```cron
 RANDOM_DELAY=360
 
@@ -38,6 +41,7 @@ RANDOM_DELAY=360
 ```
 
 - Add the following to `/etc/nginx/nginx.conf`:
+
 ```nginx
 geo $remote_addr $geoip_country_code {
     include /etc/nginx/include/geoip_country_code.conf;
