@@ -17,7 +17,9 @@ In addition to the [`ISO-3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-cou
 cd /opt ; git clone https://github.com/makhomed/nginx-geo.git
 ```
 
-Also create an `nginx-geo.toml` configuration file using the provided `nginx-geo.toml.maxmind.example` or `nginx-geo.toml.ownhost.example` as configuration examples.
+Also create an `nginx-geo.toml` configuration file using the provided
+`nginx-geo.toml.maxmind.example` or `nginx-geo.toml.ownhost.example` 
+as configuration examples.
 
 ## Upgrade
 ```
