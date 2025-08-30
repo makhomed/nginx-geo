@@ -44,9 +44,7 @@ geo $remote_addr $geoip_country_code {
 map $geoip_country_code $geoip_country_name {
     include /etc/nginx/include/geoip_country_name.conf;
 }
-```
 
-```
 proxy_set_header GeoIP-Country-Code $geoip_country_code;
 proxy_set_header GeoIP-Country-Name $geoip_country_name;
 ```
