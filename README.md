@@ -15,11 +15,11 @@ It allows to map the visitor’s IPv4 or IPv6 address to a two-character country
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
 
-Create the `/opt/nginx-geo/nginx-geo.toml` configuration file based on the provided examples.
+Create the /opt/nginx-geo/nginx-geo.toml configuration file based on the provided examples.
 
 ## Usage
 
-### Create `/etc/cron.d/nginx-geo` with the following contents:
+### Create /etc/cron.d/nginx-geo with the following contents:
 
 ```cron
 RANDOM_DELAY=360
@@ -27,7 +27,7 @@ RANDOM_DELAY=360
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
 
-### Add the following to `/etc/nginx/nginx.conf`:
+### Add the following to /etc/nginx/nginx.conf:
 
 ```nginx
 geo $remote_addr $geoip_country_code {
