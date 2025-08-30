@@ -28,14 +28,16 @@ cd /opt/nginx-geo && git pull
 ```
 
 ## Automation
-`/etc/cron.d/nginx-geo`: ```cron
+`/etc/cron.d/nginx-geo`:
+```cron
 RANDOM_DELAY=360
 
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
 
 ## Configuration
-`/etc/nginx/nginx.conf`: ```nginx
+`/etc/nginx/nginx.conf`:
+```nginx
 geo $remote_addr $geoip_country_code {
     include /etc/nginx/include/geoip_country_code.conf;
 }
