@@ -1,6 +1,6 @@
 # nginx-geo (version 2.0.0)
 
-Converts the MaxMind GeoLite2 Country database into the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html) format.
+Converts the MaxMind GeoLite2 Country database for use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
 Similar to Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), nginx-geo maps a visitor’s IPv4 or IPv6 address to a two-letter country code.
 
