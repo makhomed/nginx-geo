@@ -2,7 +2,7 @@
 
 Convert the MaxMind GeoLite2 Country database to the nginx format, to use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-Same as [`Cloudflare CF-IPCountry header`](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry)
+Same as [`Cloudflare CF-IPCountry header`](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry)\
 allows mapping visitor IPv4 or IPv6 address to a two-character country code of the originating visitor's country.
 
 In addition to the [`ISO-3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country codes:
@@ -17,8 +17,8 @@ In addition to the [`ISO-3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-cou
 cd /opt ; git clone https://github.com/makhomed/nginx-geo.git
 ```
 
-Also create an `nginx-geo.toml` configuration file using the provided
-`nginx-geo.toml.maxmind.example` or `nginx-geo.toml.ownhost.example` 
+Also create an `nginx-geo.toml` configuration file using the provided\
+`nginx-geo.toml.maxmind.example` or `nginx-geo.toml.ownhost.example`\
 as configuration examples.
 
 ## Upgrade
