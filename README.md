@@ -13,8 +13,8 @@ In addition to the [`ISO 3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-cou
 
 > [!IMPORTANT]
 > Python 3.9+ and the [requests](https://requests.readthedocs.io/), [tomllib](https://docs.python.org/3/library/tomllib.html) or [tomli](https://pypi.org/project/tomli/) modules are required.
-
-> [!NOTE] tomllib is built in starting with Python 3.11; use tomli on Python 3.9–3.10.
+> [!NOTE]
+> tomllib is built in starting with Python 3.11; use tomli on Python 3.9–3.10.
 
 ```
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git
