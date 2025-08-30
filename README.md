@@ -18,16 +18,6 @@ cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
 Create the `/opt/nginx-geo/nginx-geo.toml` configuration file based on the provided examples.
 
-## Upgrade
-```bash
-cd /opt/nginx-geo && git pull
-```
-
-## Usage
-```bash
-/opt/nginx-geo/nginx-geo
-```
-
 ## Automation
 In `/etc/cron.d/nginx-geo`:
 ```cron
