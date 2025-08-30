@@ -1,8 +1,8 @@
 # nginx-geo (version 2.0.0)
 
-Converts the MaxMind GeoLite2 Country database into a format compatible with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
+This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) for use with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-Similar to Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), nginx-geo maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addition to the [ISO 3166-1 alpha-2 codes](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country codes:
+Allow to map a visitor’s IPv4 or IPv6 address to a two-letter [ISO 3166-1 alpha-2 codes](https://www.iso.org/iso-3166-country-codes.html) country code. Similar to Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), nginx-geo also uses the same two additional special country codes:
 
 * XX — Used when the country code is unknown for the client’s IP address.
 * T1 — Used as the "virtual" country code for clients on the Tor network.
