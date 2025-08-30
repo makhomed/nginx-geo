@@ -1,12 +1,12 @@
 # nginx-geo (version 2.0.0)
 
-Converts the MaxMind GeoLite2 Country database to the nginx format for use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
+This tool converts the MaxMind GeoLite2 Country database to the nginx format for use with the [`nginx geo module`](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-Similar to Cloudflare's [`CF-IPCountry header`](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), this maps a visitor's IPv4 or IPv6 address to a two-letter country code.
+Similar to Cloudflare's [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), this maps a visitor's IPv4 or IPv6 address to a two-letter country code.
 
-In addition to the [`ISO 3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country-codes:
+In addition to the [ISO 3166-1 alpha-2 codes](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country codes:
 
-* XX — Used for clients without country-code data.
+* XX — Used for clients with no country-code data.
 * T1 — Used for clients on the Tor network.
 
 ## Installation
@@ -15,27 +15,25 @@ In addition to the [`ISO 3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-cou
 > Python 3.9+ and the [requests](https://requests.readthedocs.io/) module are required.
 
 ```bash
-# cd /opt && git clone https://github.com/makhomed/nginx-geo.git
+cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
 
-Also create the `/opt/nginx-geo/nginx-geo.toml` configuration file using the provided examples.
+Create the `/opt/nginx-geo/nginx-geo.toml` configuration file using the provided examples.
 
 ## Upgrade
 
 ```bash
-# cd /opt/nginx-geo && git pull
+cd /opt/nginx-geo && git pull
 ```
 
 ## Usage
 
 ```bash
-# /opt/nginx-geo/nginx-geo
+/opt/nginx-geo/nginx-geo
 ```
 
 ## Automation
-```bash
-# cat /etc/cron.d/nginx-geo
-```
+`/etc/cron.d/nginx-geo` file:
 ```cron
 RANDOM_DELAY=360
 
@@ -43,9 +41,7 @@ RANDOM_DELAY=360
 ```
 
 ## Configuration
-```bash
-# cat /etc/nginx/nginx.conf
-```
+`/etc/nginx/nginx.conf` file:
 ```nginx
 geo $remote_addr $geoip_country_code {
     include /etc/nginx/include/geoip_country_code.conf;
