@@ -6,7 +6,7 @@ It maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addi
 and like Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), this tool uses the following special country codes:
 
 * XX — Used when no country code is available for the client’s IP.
-* T1 — Used as a virtual country code for clients on the [Tor network](https://www.torproject.org/).
+* T1 — Used as a country code for clients on the [Tor network](https://www.torproject.org/).
 
 ## Installation
 
