@@ -29,7 +29,7 @@ cd /opt/nginx-geo && cp nginx-geo.toml.maxmind.example nginx-geo.toml && vim ngi
 - Add the following to the cron configuration:
 
 ```cron
-RANDOM_DELAY=360
+RANDOM_DELAY=60
 
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
