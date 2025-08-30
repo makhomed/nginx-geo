@@ -6,7 +6,7 @@ Similar to Cloudflare's [`CF-IPCountry header`](https://developers.cloudflare.co
 
 In addition to the [`ISO 3166-1 alpha-2 codes`](https://www.iso.org/iso-3166-country-codes.html), nginx-geo uses the following special country codes:
 
-* XX — Used for clients without country-code data.
+* XX — Used for clients without country code data.
 * T1 — Used for clients from the Tor network.
 
 ## Installation
