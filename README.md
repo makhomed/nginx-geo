@@ -10,39 +10,32 @@ In addition to the [ISO 3166-1 alpha-2 codes](https://www.iso.org/iso-3166-count
 * T1 — Used as country-code for Tor network clients.
 
 ## Installation
-
 > [!IMPORTANT]
 > Python 3.9+ and the [requests](https://requests.readthedocs.io/) module are required.
-
 ```bash
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
-
-Create the `/opt/nginx-geo/nginx-geo.toml` configuration file using the provided examples.
+Create the `/opt/nginx-geo/nginx-geo.toml` configuration file based on the provided examples.
 
 ## Upgrade
-
 ```bash
 cd /opt/nginx-geo && git pull
 ```
 
 ## Usage
-
 ```bash
 /opt/nginx-geo/nginx-geo
 ```
 
 ## Automation
-`/etc/cron.d/nginx-geo`:
-```cron
+`/etc/cron.d/nginx-geo`: ```cron
 RANDOM_DELAY=360
 
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
 
 ## Configuration
-`/etc/nginx/nginx.conf`:
-```nginx
+`/etc/nginx/nginx.conf`: ```nginx
 geo $remote_addr $geoip_country_code {
     include /etc/nginx/include/geoip_country_code.conf;
 }
