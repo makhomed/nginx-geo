@@ -1,8 +1,8 @@
 # nginx-geo (version 2.0.0)
 
-Converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into files suitable for use with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
+This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into files suitable for use with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-Maps a visitor’s IPv4 or IPv6 address to a two-letter ISO 3166-1 alpha-2 country code.
+It maps a visitor’s IP address to a two-letter ISO 3166-1 alpha-2 country code.
 
 Like Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry), nginx-geo uses the following special country codes:
 
@@ -20,7 +20,7 @@ Like Cloudflare’s [CF-IPCountry header](https://developers.cloudflare.com/fund
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git nginx-geo
 ```
 
-- Create the `nginx-geo.toml` configuration file based on the provided examples:
+- Create the `nginx-geo.toml` configuration file using the provided examples:
 
 ```bash
 cd /opt/nginx-geo && cp nginx-geo.toml.maxmind.example nginx-geo.toml && vim nginx-geo.toml
@@ -36,7 +36,7 @@ RANDOM_DELAY=360
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
 
-- Add the following to the `/etc/nginx/nginx.conf` file:
+- Add the following to `/etc/nginx/nginx.conf` file:
 
 ```nginx
 geo $remote_addr $geoip_country_code {
