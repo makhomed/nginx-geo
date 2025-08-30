@@ -2,10 +2,10 @@
 
 This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into configuration files suitable for use with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
-It maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addition to the ISO 3166-1 alpha-2 codes, this tool ([like Cloudflare](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry))uses the following special country codes:
+It maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addition to the ISO 3166-1 alpha-2 codes, this tool ([like Cloudflare](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry)) uses the following special country codes:
 
-* XX - Used when no country code is available for the client’s IP.
-* T1 - Used as a virtual country code for [Tor network](https://www.torproject.org/) clients.
+* XX — Used when no country code is available for the client’s IP address.
+* T1 — Used as a virtual country code for clients on the [Tor network](https://www.torproject.org/).
 
 ## Installation
 
@@ -14,7 +14,7 @@ It maps a visitor’s IPv4 or IPv6 address to a two-letter country code. In addi
 
 - Clone this repository into the `/opt/nginx-geo` directory:
 ```bash
-cd /opt && git clone https://github.com/makhomed/nginx-geo
+cd /opt && git clone https://github.com/makhomed/nginx-geo.git
 ```
 
 - Create the `nginx-geo.toml` configuration file based on the provided examples:
