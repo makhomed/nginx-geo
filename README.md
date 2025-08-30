@@ -26,21 +26,22 @@ cd /opt/nginx-geo ; git pull
 
 ## Usage
 ```
-/opt/nginx-geo/nginx-geo
+# /opt/nginx-geo/nginx-geo
 ```
 
-## Automation via cron
-
-Configure a cron job, for example, in the file `/etc/cron.d/nginx-geo`:
-
+## Automation
 ```
+# cat /etc/cron.d/nginx-geo
+
 RANDOM_DELAY=360
 
 0 0 * * * root /opt/nginx-geo/nginx-geo
 ```
 
-## nginx configuration in http context
+## Configuration
 ```
+# cat /etc/nginx/nginx.conf
+
     geo $remote_addr $geoip_country_code {
         include /etc/nginx/include/geoip_country_code.conf;
     }
