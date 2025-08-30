@@ -1,11 +1,11 @@
 # nginx-geo (version 2.0.0)
 
-This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into files suitable for use with the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
+This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into files suitable for the [nginx geo module](https://nginx.org/en/docs/http/ngx_http_geo_module.html).
 
 It maps the client's IP address to a [standard country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or to one of the following [special country codes](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-ipcountry):
 
-* `XX` — used when no country code is available for a client's IP address.
-* `T1` — used as a virtual "country" code for clients on the [Tor network](https://www.torproject.org/).
+* `XX` — used when no country code is available for a client's IP address
+* `T1` — used as a country code for clients on the [Tor network](https://www.torproject.org/)
 
 ## Installation
 
@@ -18,7 +18,7 @@ It maps the client's IP address to a [standard country code](https://en.wikipedi
 cd /opt && git clone https://github.com/makhomed/nginx-geo.git nginx-geo
 ```
 
-- Create the `nginx-geo.toml` configuration file using the provided example:
+- Create the `nginx-geo.toml` configuration file using one of the provided example files:
 
 ```bash
 cd /opt/nginx-geo && cp nginx-geo.toml.maxmind.example nginx-geo.toml && vim nginx-geo.toml
