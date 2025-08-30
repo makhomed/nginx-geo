@@ -21,7 +21,7 @@ Create the `/opt/nginx-geo/nginx-geo.toml` configuration file based on the provi
 
 ## Usage
 
-### In `/etc/cron.d/nginx-geo`
+### In `/etc/cron.d/nginx-geo`:
 
 ```cron
 RANDOM_DELAY=360
