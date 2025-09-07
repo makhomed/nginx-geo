@@ -3,7 +3,7 @@
 __author__ = "Hennadii Makhomed"
 __contact__ = "https://github.com/makhomed/nginx-geo"
 __license__ = "GNU Affero General Public License, version 3.0 or later"
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 # imports {{{
 
@@ -311,6 +311,19 @@ def fetch_tor_exit_nodes(): # {{{
     tor_ipv6 = sorted(list(tor_ipv6_exit_nodes))
 # }}}
 
+def remove_duplicate_networks(): # {{{
+
+    for ipv4 in tor_ipv4:
+        ipv4_subnet = f'{ipv4}/32'
+        if ipv4 in net_ipv4: del net_ipv4[ipv4]
+        if ipv4_subnet in net_ipv4: del net_ipv4[ipv4_subnet]
+
+    for ipv6 in tor_ipv6:
+        ipv6_subnet = f'{ipv6}/128'
+        if ipv6 in net_ipv6: del net_ipv6[ipv6]
+        if ipv6_subnet in net_ipv6: del net_ipv6[ipv6_subnet]
+# }}}
+
 def write_include_files(): # {{{
     out_country_dict = dict()
     out_country_name = list()
@@ -426,6 +439,7 @@ def main(): # {{{
     ensure_expected_fieldnames()
     read_csv_files_to_memory()
     fetch_tor_exit_nodes()
+    remove_duplicate_networks()
     write_include_files()
     reload_nginx_daemon()
 

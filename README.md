@@ -1,4 +1,4 @@
-# nginx-geo (version 2.0.0)
+# nginx-geo (version 2.0.1)
 
 This tool converts the [MaxMind GeoLite2 Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/) into files suitable for the nginx [geo](https://nginx.org/en/docs/http/ngx_http_geo_module.html) and [map](https://nginx.org/en/docs/http/ngx_http_map_module.html) modules.
 
