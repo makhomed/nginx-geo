@@ -3,17 +3,21 @@
 __author__ = "Hennadii Makhomed"
 __contact__ = "https://github.com/makhomed/nginx-geo"
 __license__ = "GNU Affero General Public License, version 3.0 or later"
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 
 # imports {{{
 
 try:
-    import tomllib
+    import tomllib # https://docs.python.org/3/library/tomllib.html
 except ModuleNotFoundError:
     try:
-        import tomli as tomllib
+        import tomli as tomllib # https://pypi.org/project/tomli/
     except ModuleNotFoundError:
-        import pip._vendor.tomli as tomllib
+        import sys ; sys.exit(
+            "\nTOML [ https://toml.io/ ] parser not found.\n"
+            f"\nInstall it with:\n"
+            f"\n    {sys.executable or 'python3'} -m pip install tomli\n"
+        )
 
 from pathlib import Path, PurePosixPath
 
