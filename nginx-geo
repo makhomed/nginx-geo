@@ -3,7 +3,7 @@
 __author__ = "Hennadii Makhomed"
 __contact__ = "https://github.com/makhomed/nginx-geo"
 __license__ = "GNU Affero General Public License, version 3.0 or later"
-__version__ = "2.0.2"
+__version__ = "2.0.3"
 
 # imports {{{
 
@@ -39,9 +39,9 @@ import zipfile
 
 configuration_filename = Path('/opt/nginx-geo/nginx-geo.toml')
 
-local_database_var_dir = Path('/opt/nginx-geo/var')
-local_database_zipfile = Path('/opt/nginx-geo/var/GeoLite2-Country-CSV.zip')
-local_database_version = Path('/opt/nginx-geo/var/GeoLite2-Country-CSV.zip.version')
+local_database_var_dir = Path('/var/cache/nginx-geo')
+local_database_zipfile = Path('/var/cache/nginx-geo/GeoLite2-Country-CSV.zip')
+local_database_version = Path('/var/cache/nginx-geo/GeoLite2-Country-CSV.zip.version')
 
 default_account_id = ''
 default_license_key = ''
