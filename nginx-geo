@@ -3,7 +3,7 @@
 __author__ = "Hennadii Makhomed"
 __contact__ = "https://github.com/makhomed/nginx-geo"
 __license__ = "GNU Affero General Public License, version 3.0 or later"
-__version__ = "2.0.3"
+__version__ = "2.1.0"
 
 # imports {{{
 
@@ -330,6 +330,10 @@ def remove_duplicate_networks(): # {{{
 
 def write_include_files(): # {{{
     out_country_dict = dict()
+    assert 'XX' not in out_country_dict
+    out_country_dict['XX'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY"';
+    assert 'T1' not in out_country_dict
+    out_country_dict['T1'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY / TOR NETWORK EXIT NODES"';
     out_country_name = list()
     out_country_code = list()
     out_country_code.append('default XX;')
@@ -340,17 +344,26 @@ def write_include_files(): # {{{
         out_country_code_ipv6.append('default XX;')
 
     for network in net_ipv4:
-        registered_country_geoname_id = net_ipv4[network]['registered_country_geoname_id']
         geoname_id = net_ipv4[network]['geoname_id']
-        if not geoname_id:
-            geoname_id = registered_country_geoname_id
-        country_code = geo_info[geoname_id]['country_iso_code']
-        continent_name = geo_info[geoname_id]['continent_name']
-        country_name = geo_info[geoname_id]['country_name']
-        if not country_code:
-           country_code = geo_info[registered_country_geoname_id]['country_iso_code']
-           continent_name = geo_info[registered_country_geoname_id]['continent_name']
-           country_name = geo_info[registered_country_geoname_id]['country_name']
+        registered_country_geoname_id = net_ipv4[network]['registered_country_geoname_id']
+        represented_country_geoname_id = net_ipv4[network]['represented_country_geoname_id']
+        if geoname_id and geo_info[geoname_id]['country_iso_code']:
+            country_code = geo_info[geoname_id]['country_iso_code']
+            country_name = geo_info[geoname_id]['country_name']
+            continent_name = geo_info[geoname_id]['continent_name']
+        elif registered_country_geoname_id and geo_info[registered_country_geoname_id]['country_iso_code']:
+            country_code = geo_info[registered_country_geoname_id]['country_iso_code']
+            country_name = geo_info[registered_country_geoname_id]['country_name']
+            continent_name = geo_info[registered_country_geoname_id]['continent_name']
+        elif represented_country_geoname_id and geo_info[represented_country_geoname_id]['country_iso_code']:
+            country_code = geo_info[represented_country_geoname_id]['country_iso_code']
+            country_name = geo_info[ represented_country_geoname_id]['country_name']
+            continent_name = geo_info[represented_country_geoname_id]['continent_name']
+        else:
+            country_code = "XX";
+            country_name = "UNKNOWN COUNTRY";
+            continent_name = "UNKNOWN CONTINENT";
+
         assert len(country_code) == 2 and country_code.isupper()
         network_country_code = f'{network} {country_code};'
         out_country_code.append(network_country_code)
@@ -370,17 +383,26 @@ def write_include_files(): # {{{
                 out_country_code_ipv4.append(line)
 
     for network in net_ipv6:
-        registered_country_geoname_id = net_ipv6[network]['registered_country_geoname_id']
         geoname_id = net_ipv6[network]['geoname_id']
-        if not geoname_id:
-            geoname_id = registered_country_geoname_id
-        country_code = geo_info[geoname_id]['country_iso_code']
-        continent_name = geo_info[geoname_id]['continent_name']
-        country_name = geo_info[geoname_id]['country_name']
-        if not country_code:
-           country_code = geo_info[registered_country_geoname_id]['country_iso_code']
-           continent_name = geo_info[registered_country_geoname_id]['continent_name']
-           country_name = geo_info[registered_country_geoname_id]['country_name']
+        registered_country_geoname_id = net_ipv6[network]['registered_country_geoname_id']
+        represented_country_geoname_id = net_ipv6[network]['represented_country_geoname_id']
+        if geoname_id and geo_info[geoname_id]['country_iso_code']:
+            country_code = geo_info[geoname_id]['country_iso_code']
+            country_name = geo_info[geoname_id]['country_name']
+            continent_name = geo_info[geoname_id]['continent_name']
+        elif registered_country_geoname_id and geo_info[registered_country_geoname_id]['country_iso_code']:
+            country_code = geo_info[registered_country_geoname_id]['country_iso_code']
+            country_name = geo_info[registered_country_geoname_id]['country_name']
+            continent_name = geo_info[registered_country_geoname_id]['continent_name']
+        elif represented_country_geoname_id and geo_info[represented_country_geoname_id]['country_iso_code']:
+            country_code = geo_info[represented_country_geoname_id]['country_iso_code']
+            country_name = geo_info[ represented_country_geoname_id]['country_name']
+            continent_name = geo_info[represented_country_geoname_id]['continent_name']
+        else:
+            country_code = "XX";
+            country_name = "UNKNOWN COUNTRY";
+            continent_name = "UNKNOWN CONTINENT";
+
         assert len(country_code) == 2 and country_code.isupper()
         network_country_code = f'{network} {country_code};'
         out_country_code.append(network_country_code)
@@ -391,7 +413,7 @@ def write_include_files(): # {{{
             assert country_description == out_country_dict[country_code]
         else:
             out_country_dict[country_code] = country_description
-    
+
     if mark_tor_exit_nodes_with_T1_country_code:
         for ipv6 in tor_ipv6:
             line = f'{ipv6} T1;'
@@ -405,10 +427,6 @@ def write_include_files(): # {{{
         geoip_country_code_ipv4 = output_dir / 'geoip_country_code_ipv4.conf'
         geoip_country_code_ipv6 = output_dir / 'geoip_country_code_ipv6.conf'
 
-    assert 'XX' not in out_country_dict
-    out_country_dict['XX'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY"';
-    assert 'T1' not in out_country_dict
-    out_country_dict['T1'] = '"UNKNOWN CONTINENT / UNKNOWN COUNTRY / TOR NETWORK EXIT NODES"';
     for country_code in sorted(list(out_country_dict)):
         country_description = out_country_dict[country_code]
         out_country_name.append(f'{country_code} {country_description};')
