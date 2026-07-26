@@ -3,7 +3,7 @@
 __author__ = "Hennadii Makhomed"
 __contact__ = "https://github.com/makhomed/nginx-geo"
 __license__ = "GNU Affero General Public License, version 3.0 or later"
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 # imports {{{
 
@@ -250,12 +250,14 @@ def read_csv_files_to_memory(): # {{{
 # }}}
 
 def fetch_tor_ipv4_only_exit_nodes_from_tordnsel(): # {{{
+    out_ipv4 = set()
+    if not mark_tor_exit_nodes_with_T1_country_code:
+        return out_ipv4
     headers = {"User-Agent": "tor-exits-now/1.3", "Accept-Encoding": "gzip"}
     timeout = (requests_connect_timeout, requests_read_timeout)
     r = requests.get(TOR_EXIT_NODES_IPV4_ONLY_URL, headers=headers, timeout=timeout)
     r.raise_for_status()
     atomic_write_text(r.text, tor_exit_nodes_ipv4_only_filename)
-    out_ipv4 = set()
     for line in r.text.splitlines():
         if line.startswith("ExitAddress "):
             parts = line.split()
@@ -265,6 +267,10 @@ def fetch_tor_ipv4_only_exit_nodes_from_tordnsel(): # {{{
 # }}}
 
 def fetch_tor_ipv4_and_ipv6_exit_nodes_from_onionoo(): # {{{
+    out_ipv4 = set()
+    out_ipv6 = set()
+    if not mark_tor_exit_nodes_with_T1_country_code:
+        return out_ipv4, out_ipv6
     _RE_OR_V4 = re.compile(r"^(?P<ip>(?:\d{1,3}\.){3}\d{1,3})(?::\d+(?:-\d+)?)?$")
     _RE_OR_V6 = re.compile(r"^\[(?P<ip>[0-9A-Fa-f:]+)\]:(?P<port>\d+(?:-\d+)?)$")
     def _split_or_addr(s):
@@ -287,8 +293,6 @@ def fetch_tor_ipv4_and_ipv6_exit_nodes_from_onionoo(): # {{{
     r.raise_for_status()
     data = r.json()
     atomic_write_text(json.dumps(data, indent=4), tor_exit_nodes_ipv4_ipv6_filename)
-    out_ipv4 = set()
-    out_ipv6 = set()
     for r in data.get("relays", []):
         flags = set(r.get("flags") or [])
         if "Exit" not in flags:
